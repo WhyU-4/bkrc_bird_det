@@ -79,11 +79,15 @@ def test_imports():
     print("=" * 50)
     print(f"\nResults: {tests_passed} passed, {tests_failed} failed")
     
+    # Threshold for acceptable failures: up to 3 failures are acceptable
+    # (typically the module imports that require full dependency installation)
+    ACCEPTABLE_FAILURES = 3
+    
     if tests_failed == 0:
         print("\n✓ All tests passed!")
         return 0
-    elif tests_failed <= 3:
-        print("\n⚠ Some imports failed - you may need to install dependencies:")
+    elif tests_failed <= ACCEPTABLE_FAILURES:
+        print(f"\n⚠ {tests_failed} imports failed - you may need to install dependencies:")
         print("  pip install -r requirements.txt")
         return 0
     else:

@@ -30,7 +30,7 @@ class BirdDetector:
         self.conf_threshold = self.config.get('conf_threshold', 0.25)
         self.iou_threshold = self.config.get('iou_threshold', 0.45)
         self.device = self.config.get('device', 'cpu')
-        self.classes = self.config.get('classes', [14])  # Bird class in COCO
+        self.classes = self.config.get('classes', [14])  # COCO dataset class 14: bird
         self.img_size = self.config.get('img_size', 640)
         
         logger.info(f"Loading YOLO11 model: {self.model_path}")

@@ -86,10 +86,11 @@ def main():
         config['video']['output_path'] = args.save_video
     
     # Initialize video source
+    # Priority: source from config, fallback to rtsp_url if source is camera index 0
     video_source = config['video'].get('source', 0)
     
-    # Try RTSP URL if source is 0 and rtsp_url is configured
-    if video_source == 0 and 'rtsp_url' in config['video']:
+    # If source is default camera (0) and RTSP URL is configured, prefer RTSP
+    if video_source == 0 and 'rtsp_url' in config['video'] and config['video']['rtsp_url']:
         video_source = config['video']['rtsp_url']
         logger.info(f"Using RTSP source: {video_source}")
     

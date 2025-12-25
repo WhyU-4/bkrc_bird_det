@@ -17,12 +17,16 @@ fi
 
 # Create virtual environment
 echo ""
-echo "Creating virtual environment..."
-python3 -m venv venv
-
-if [ $? -ne 0 ]; then
-    echo "Error: Failed to create virtual environment"
-    exit 1
+if [ -d "venv" ]; then
+    echo "Virtual environment already exists, skipping creation..."
+else
+    echo "Creating virtual environment..."
+    python3 -m venv venv
+    
+    if [ $? -ne 0 ]; then
+        echo "Error: Failed to create virtual environment"
+        exit 1
+    fi
 fi
 
 # Activate virtual environment

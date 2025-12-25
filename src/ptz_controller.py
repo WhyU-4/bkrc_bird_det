@@ -108,12 +108,17 @@ class PTZController:
             request = self.ptz_service.create_type('ContinuousMove')
             request.ProfileToken = self.profile.token
             
+            # Initialize velocity structure if needed
             if request.Velocity is None:
-                request.Velocity = self.ptz_service.GetStatus({'ProfileToken': self.profile.token}).Position
+                request.Velocity = self.ptz_service.create_type('PTZSpeed')
             
+            # Set pan/tilt velocity
             request.Velocity.PanTilt.x = pan_velocity
             request.Velocity.PanTilt.y = tilt_velocity
-            request.Velocity.Zoom.x = 0
+            
+            # Set zoom velocity (not used, but required by some cameras)
+            if hasattr(request.Velocity, 'Zoom'):
+                request.Velocity.Zoom.x = 0
             
             # Execute move
             self.ptz_service.ContinuousMove(request)
