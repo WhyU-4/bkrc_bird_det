@@ -1,0 +1,50 @@
+# YOLO11 Configuration
+yolo:
+  model_path: "yolo11n.pt"  # YOLO11 nano model for RK3588S performance
+  conf_threshold: 0.25
+  iou_threshold: 0.45
+  device: "cpu"  # Use "cpu" for RK3588S or "0" for GPU if available
+  classes: [14]  # COCO class 14 is "bird"
+  img_size: 640
+
+# ONVIF Camera Configuration
+camera:
+  ip: "192.168.1.100"
+  port: 80
+  username: "admin"
+  password: "admin"
+  # PTZ settings
+  ptz:
+    enabled: true
+    pan_speed: 0.5  # Range: 0.0 to 1.0
+    tilt_speed: 0.5  # Range: 0.0 to 1.0
+    # Dead zone: area in center where no PTZ adjustment is made
+    dead_zone_x: 50  # pixels
+    dead_zone_y: 50  # pixels
+    # Pan/Tilt sensitivity
+    sensitivity: 0.001  # Movement per pixel offset
+
+# Tracking Configuration
+tracking:
+  # Center of frame target
+  frame_center_tolerance: 50  # pixels
+  # Update frequency
+  update_interval: 0.1  # seconds between PTZ updates
+  # Tracking mode
+  mode: "center"  # "center" or "follow"
+  # Smoothing
+  smoothing_factor: 0.3  # 0.0 (no smoothing) to 1.0 (max smoothing)
+
+# Video Configuration
+video:
+  # RTSP stream from camera
+  rtsp_url: "rtsp://admin:admin@192.168.1.100:554/stream1"
+  # Or use camera index for local camera
+  source: 0  # 0 for default camera, or use rtsp_url
+  # Display
+  display: true
+  display_width: 1280
+  display_height: 720
+  # Recording
+  save_video: false
+  output_path: "output.mp4"

@@ -1,0 +1,14 @@
+# Deep Learning and Computer Vision
+ultralytics>=8.0.0
+opencv-python>=4.8.0
+numpy>=1.24.0
+torch>=2.0.0
+torchvision>=0.15.0
+
+# ONVIF Camera Control
+onvif-zeep>=0.2.12
+zeep>=4.2.1
+
+# Utilities
+pyyaml>=6.0
+python-dotenv>=1.0.0
