@@ -38,6 +38,9 @@ class PTZController:
         self.dead_zone_x = self.ptz_config.get('dead_zone_x', 50)
         self.dead_zone_y = self.ptz_config.get('dead_zone_y', 50)
         self.sensitivity = self.ptz_config.get('sensitivity', 0.001)
+        # Fixed-speed continuous move requirement: speed is fixed at a percent value (default 50%)
+        self.fixed_speed_percent = int(self.ptz_config.get('fixed_speed_percent', 50))
+        self.fixed_speed = max(0.0, min(1.0, self.fixed_speed_percent / 100.0))
         
         self.camera = None
         self.ptz_service = None
@@ -100,25 +103,22 @@ class PTZController:
             return
         
         try:
-            # Clamp velocities to valid range
-            pan_velocity = max(-1.0, min(1.0, pan_velocity))
-            tilt_velocity = max(-1.0, min(1.0, tilt_velocity))
+            # Normalize to fixed-speed continuous movement (camera only supports continuous @ fixed speed)
+            def _sgn(v: float) -> float:
+                return 0.0 if v == 0 else (1.0 if v > 0 else -1.0)
+
+            pan_velocity = _sgn(pan_velocity) * self.fixed_speed
+            tilt_velocity = _sgn(tilt_velocity) * self.fixed_speed
             
-            # Create velocity vector
+            # Create velocity vector (types come from ver10 schema, not PTZ WSDL)
             request = self.ptz_service.create_type('ContinuousMove')
             request.ProfileToken = self.profile.token
-            
-            # Initialize velocity structure if needed
-            if request.Velocity is None:
-                request.Velocity = self.ptz_service.create_type('PTZSpeed')
-            
-            # Set pan/tilt velocity
-            request.Velocity.PanTilt.x = pan_velocity
-            request.Velocity.PanTilt.y = tilt_velocity
-            
-            # Set zoom velocity (not used, but required by some cameras)
-            if hasattr(request.Velocity, 'Zoom'):
-                request.Velocity.Zoom.x = 0
+
+            # Assign dicts; zeep will coerce to proper types
+            request.Velocity = {
+                'PanTilt': {'x': pan_velocity, 'y': tilt_velocity},
+                'Zoom': {'x': 0.0},
+            }
             
             # Execute move
             self.ptz_service.ContinuousMove(request)
@@ -169,17 +169,26 @@ class PTZController:
             logger.debug("Target within dead zone, no movement needed")
             return
         
-        # Calculate velocities based on offset and sensitivity
-        pan_velocity = offset_x * self.sensitivity * self.pan_speed
-        tilt_velocity = -offset_y * self.sensitivity * self.tilt_speed  # Invert Y
-        
-        # Clamp velocities
-        pan_velocity = max(-1.0, min(1.0, pan_velocity))
-        tilt_velocity = max(-1.0, min(1.0, tilt_velocity))
-        
-        logger.debug(f"Moving PTZ: pan={pan_velocity:.3f}, tilt={tilt_velocity:.3f}")
-        
-        # Execute movement
+        # Continuous-only control with fixed speed magnitude
+        # Determine direction by sign of offset, magnitude fixed by fixed_speed (e.g., 50% -> 0.5)
+        pan_velocity = 0.0
+        tilt_velocity = 0.0
+
+        if abs(offset_x) >= self.dead_zone_x:
+            pan_velocity = self.fixed_speed if offset_x > 0 else -self.fixed_speed
+        if abs(offset_y) >= self.dead_zone_y:
+            tilt_velocity = -self.fixed_speed if offset_y > 0 else self.fixed_speed  # Invert Y axis
+
+        # If both axes within dead zone, do nothing
+        if pan_velocity == 0.0 and tilt_velocity == 0.0:
+            logger.debug("Target within dead zone after evaluation; no movement issued")
+            return
+
+        logger.debug(
+            f"Continuous fixed-speed move: pan={pan_velocity:.3f}, tilt={tilt_velocity:.3f} (fixed {self.fixed_speed_percent}%)"
+        )
+
+        # Execute movement with short duration pulses
         self.move_continuous(pan_velocity, tilt_velocity, duration=0.2)
     
     def go_home(self):

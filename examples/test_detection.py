@@ -20,8 +20,9 @@ def main():
         detector = BirdDetector(config)
         print("✓ YOLO11 model loaded successfully")
         
-        # Open video source
-        video_source = config['video'].get('source', 0)
+        # Open video source: prefer RTSP URL if provided, else use index
+        video_cfg = config.get('video', {})
+        video_source = video_cfg.get('rtsp_url') or video_cfg.get('source', 0)
         cap = cv2.VideoCapture(video_source)
         
         if not cap.isOpened():
@@ -30,6 +31,7 @@ def main():
         
         print(f"✓ Video source opened: {video_source}")
         print("\nDetecting birds... Press 'q' to quit")
+        display = bool(video_cfg.get('display', True))
         
         detection_count = 0
         frame_count = 0
@@ -53,14 +55,15 @@ def main():
             # Draw detections
             annotated_frame = detector.draw_detections(frame, detections)
             
-            # Display
-            cv2.imshow('Bird Detection Test', annotated_frame)
-            
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
+            # Display (optional)
+            if display:
+                cv2.imshow('Bird Detection Test', annotated_frame)
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    break
         
         cap.release()
-        cv2.destroyAllWindows()
+        if display:
+            cv2.destroyAllWindows()
         
         print(f"\n✓ Test complete")
         print(f"  Processed {frame_count} frames")

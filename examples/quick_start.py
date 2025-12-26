@@ -17,8 +17,9 @@ def main():
     print("Initializing bird tracker...")
     tracker = BirdTracker(config)
     
-    # Open video source (use 0 for webcam or RTSP URL)
-    video_source = config['video'].get('source', 0)
+    # Open video source: prefer RTSP URL if provided, else use index
+    video_cfg = config.get('video', {})
+    video_source = video_cfg.get('rtsp_url') or video_cfg.get('source', 0)
     cap = cv2.VideoCapture(video_source)
     
     if not cap.isOpened():
@@ -26,6 +27,9 @@ def main():
         return
     
     print("Bird tracking started. Press 'q' to quit.")
+    display = bool(video_cfg.get('display', True))
+    dw = int(video_cfg.get('display_width', 0) or 0)
+    dh = int(video_cfg.get('display_height', 0) or 0)
     
     try:
         while True:
@@ -36,16 +40,19 @@ def main():
             # Process frame
             annotated_frame, tracking_active = tracker.process_frame(frame)
             
-            # Display
-            cv2.imshow('Bird Tracker', annotated_frame)
-            
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
+            # Display (optional)
+            if display:
+                if dw > 0 and dh > 0:
+                    annotated_frame = cv2.resize(annotated_frame, (dw, dh))
+                cv2.imshow('Bird Tracker', annotated_frame)
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    break
     
     finally:
         tracker.stop_ptz()
         cap.release()
-        cv2.destroyAllWindows()
+        if display:
+            cv2.destroyAllWindows()
         
         # Print statistics
         stats = tracker.get_statistics()
