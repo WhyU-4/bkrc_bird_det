@@ -84,25 +84,45 @@ cp .env.example .env
 编辑 `config.yaml` 文件，根据您的需求调整参数：
 
 ```yaml
-# 摄像头配置
-camera:
-  ip: "192.168.1.100"     # 摄像头 IP 地址
-  port: 80                 # ONVIF 端口
-  username: "admin"        # 用户名
-  password: "admin"        # 密码
-
 # YOLO 配置
 yolo:
   model_path: "yolo11n.pt" # 模型路径
   conf_threshold: 0.25     # 置信度阈值
-  classes: [14]            # 鸟类类别 ID
+  iou_threshold: 0.45      # IOU 阈值
+  device: "cpu"            # 使用设备：cpu 或 0 (GPU)
+  classes: [14]            # 鸟类类别 ID (COCO 14)
+  img_size: 640            # 输入图像尺寸
 
-# PTZ 配置
-ptz:
-  pan_speed: 0.5          # 水平速度
-  tilt_speed: 0.5         # 垂直速度
-  dead_zone_x: 50         # 中心死区 X
-  dead_zone_y: 50         # 中心死区 Y
+# 摄像头配置
+camera:
+  ip: "192.168.1.21"       # 摄像头 IP 地址
+  port: 10080              # ONVIF 端口
+  username: "admin"        # 用户名
+  password: "888888"       # 密码
+  ptz:
+    enabled: true          # 启用 PTZ 控制
+    pan_speed: 0.5         # 水平速度 (0.0-1.0)
+    tilt_speed: 0.5        # 垂直速度 (0.0-1.0)
+    dead_zone_x: 50        # 中心死区 X (像素)
+    dead_zone_y: 50        # 中心死区 Y (像素)
+    sensitivity: 0.001     # 每像素偏移的移动量
+
+# 跟踪配置
+tracking:
+  frame_center_tolerance: 50  # 帧中心容差 (像素)
+  update_interval: 0.1        # PTZ 更新间隔 (秒)
+  mode: "center"              # 跟踪模式：center 或 follow
+  smoothing_factor: 0.3       # 平滑系数 (0.0-1.0)
+
+# 视频配置
+video:
+  rtsp_url: "rtsp://admin:888888@192.168.1.21:10554/tcp/av0_0"
+  source: rtsp_url            # rtsp_url 或摄像头索引 (如 0)
+  display: true               # 启用显示
+  display_width: 640          # 显示宽度
+  display_height: 360         # 显示高度
+  save_video: false           # 保存视频
+  output_path: "output.mp4"   # 输出路径
 ```
 
 ## 使用方法 / Usage
@@ -116,7 +136,7 @@ python main.py
 ### 使用 RTSP 流 / With RTSP Stream
 
 ```bash
-python main.py --source rtsp://admin:admin@192.168.1.100:554/stream1
+python main.py --source rtsp://admin:888888@192.168.1.21:10554/tcp/av0_0
 ```
 
 ### 无显示模式（用于服务器） / Headless Mode
@@ -187,10 +207,12 @@ yolo:
   model_path: "yolo11n.pt"  # 使用 nano 模型
   img_size: 640              # 较小的输入尺寸
   device: "cpu"              # RK3588S 使用 CPU
+  conf_threshold: 0.25       # 置信度阈值
 
 tracking:
-  update_interval: 0.2       # 降低更新频率
-  smoothing_factor: 0.5      # 增加平滑以减少抖动
+  update_interval: 0.1       # PTZ 更新间隔
+  smoothing_factor: 0.3      # 平滑系数
+  mode: "center"             # 跟踪模式
 ```
 
 ## 故障排除 / Troubleshooting
